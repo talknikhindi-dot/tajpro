@@ -194,3 +194,112 @@
 </body>
 </html>
 <head>69bfd69035a692d23c5c5e21d9203d592eed1cc4</head>
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+    <meta charset="UTF-8">
+    <title>Talknik Ad Rotator - 8 Ads Loop</title>
+    <style>
+        /* जाहिरात दिसण्याची जागा */
+        #ad-display-box {
+            width: 100%;
+            min-height: 280px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ad-display-box">
+        <div id="main-ad-target">जाहिरात लोड होत आहे...</div>
+    </div>
+
+<script>
+    // १ ते ८ जाहिरातींची यादी
+    const adsList = [
+        { type: 'zone', value: '222502' }, // १ ला कोड (Monetag/Quge5)
+        { type: 'script', value: 'https://pl28964026.profitablecpmratenetwork.com/be/c4/36/bec4361436887e4212eaeed1dfec13e2.js' }, // २ रा
+        { 
+            type: 'container', 
+            script: 'https://pl28964030.profitablecpmratenetwork.com/2c93daae1c4948ef07fd56b11ec05fd3/invoke.js', 
+            divId: 'container-2c93daae1c4948ef07fd56b11ec05fd3' 
+        }, // ३ रा
+        { type: 'script', value: 'https://pl28964032.profitablecpmratenetwork.com/65/d4/4d/65d44dde003d63e560ac9a32153e922e.js' }, // ४ था
+        { 
+            type: 'atOptions', 
+            key: '9e555f21d97b4b925284f375dc7be243', 
+            format: 'iframe', height: 90, width: 728,
+            script: 'https://www.highperformanceformat.com/9e555f21d97b4b925284f375dc7be243/invoke.js'
+        }, // ५ वा
+        { type: 'placeholder', text: '६ व्या कोडची जागा रिकामी आहे' }, // ६ वा
+        { type: 'placeholder', text: '७ व्या कोडची जागा रिकामी आहे' }, // ७ वा
+        { 
+            type: 'onclicka', 
+            script: 'https://js.onclckmn.com/static/onclicka.js', 
+            admpid: '431531' 
+        } // ८ वा कोड
+    ];
+
+    let currentIdx = 0;
+    const rotationDelay = 15000; // १५ सेकंद (वेळ कमी-जास्त करू शकता)
+
+    function loadNextAd() {
+        const target = document.getElementById('main-ad-target');
+        target.innerHTML = ''; // जुनी जाहिरात साफ करा
+
+        const currentAd = adsList[currentIdx];
+        
+        if(currentAd.type === 'placeholder') {
+            target.innerHTML = `<p style="color:#aaa; font-family:sans-serif;">${currentAd.text}</p>`;
+        } else {
+            const script = document.createElement('script');
+            script.async = true;
+
+            if (currentAd.type === 'zone') {
+                script.src = "https://quge5.com/88/tag.min.js";
+                script.dataset.zone = currentAd.value;
+                script.dataset.cfasync = "false";
+            } 
+            else if (currentAd.type === 'script') {
+                script.src = currentAd.value;
+            } 
+            else if (currentAd.type === 'container') {
+                const newDiv = document.createElement('div');
+                newDiv.id = currentAd.divId;
+                target.appendChild(newDiv);
+                script.src = currentAd.script;
+                script.dataset.cfasync = "false";
+            }
+            else if (currentAd.type === 'atOptions') {
+                window.atOptions = { 'key': currentAd.key, 'format': currentAd.format, 'height': currentAd.height, 'width': currentAd.width, 'params': {} };
+                script.src = currentAd.script;
+            }
+            else if (currentAd.type === 'onclicka') {
+                script.src = currentAd.script;
+                script.dataset.admpid = currentAd.admpid;
+            }
+            target.appendChild(script);
+        }
+
+        console.log("आता जाहिरात " + (currentIdx + 1) + " लोड झाली आहे.");
+        
+        // ८ व्या कोडनंतर पुन्हा १ वर जाण्यासाठी (Loop)
+        currentIdx = (currentIdx + 1) % adsList.length;
+    }
+
+    // पहिली जाहिरात लगेच दाखवा
+    loadNextAd();
+
+    // ठराविक काळानंतर जाहिरात बदलण्याचे चक्र सुरू ठेवा
+    setInterval(loadNextAd, rotationDelay);
+</script>
+
+</body>
+</html>

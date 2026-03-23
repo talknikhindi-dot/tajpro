@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Taj Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --gold: #ffd700; --silver: #e0e0e0; --dollar: #2ecc71; 
+            --star: #fff700; --neon: #00fbff; 
+        }
+        * { box-sizing: border-box; touch-action: none; user-select: none; margin: 0; padding: 0; }
+        
+        body {
+            background: #000; color: white; font-family: 'Arial', sans-serif;
+            height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+        }
+
+        /* Short Title Header */
+        header {
+            padding: 10px; text-align: center; background: #000;
+            border-bottom: 2px solid var(--gold);
+        }
+        h1 { font-family: 'Bungee', cursive; color: var(--gold); font-size: 24px; letter-spacing: 2px; }
+
+        #game-view {
+            flex-grow: 1; position: relative; width: 100%;
+            background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)), 
+                        url('https://images.unsplash.com/photo-1548013146-72479768bbaa?auto=format&fit=crop&w=1000&q=80') center/cover;
+            overflow: hidden;
+        }
+
+        #hero {
+            position: absolute; width: 60px; height: 60px;
+            background: url('https://cdn-icons-png.flaticon.com/512/1065/1065500.png') no-repeat center/contain;
+            filter: drop-shadow(0 0 15px var(--neon)); z-index: 50;
+        }
+
+        /* Treasury Items */
+        .item { position: absolute; font-weight: bold; z-index: 40; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .dollar { color: var(--dollar); font-size: 35px; text-shadow: 0 0 15px var(--dollar); }
+        .coin { width: 35px; height: 35px; background: radial-gradient(circle, #fff, var(--gold)); box-shadow: 0 0 15px var(--gold); border: 2px solid #b8860b; color: #000; }
+        .silver { width: 30px; height: 30px; background: radial-gradient(circle, #fff, var(--silver)); box-shadow: 0 0 10px var(--silver); border: 2px solid #7f8c8d; color: #000; }
+        .star { font-size: 30px; color: var(--star); animation: twinkle 0.4s infinite alternate; text-shadow: 0 0 15px var(--star); }
+        .enemy { width: 45px; height: 45px; background: url('https://cdn-icons-png.flaticon.com/512/1233/1233857.png') no-repeat center/contain; filter: drop-shadow(0 0 10px red); }
+
+        @keyframes twinkle { from { transform: scale(0.8); } to { transform: scale(1.2); } }
+
+        /* Navigation Pages */
+        nav {
+            display: flex; justify-content: space-around; background: #111;
+            padding: 15px 0; border-top: 2px solid var(--gold);
+        }
+        .nav-btn {
+            background: transparent; color: white; border: 1px solid var(--gold);
+            padding: 10px 25px; border-radius: 5px; font-family: 'Bungee';
+            cursor: pointer; font-size: 14px;
+        }
+
+        #overlay {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.9);
+            display: flex; justify-content: center; align-items: center; z-index: 1000;
+        }
+    </style>
+</head>
+<body onmousemove="handleMove(event)" ontouchmove="handleMove(event)" onmousedown="firing=true" onmouseup="firing=false" ontouchstart="firing=true" ontouchend="firing=false">
+
+    <header>
+        <h1>TAJ PRO</h1>
+    </header>
+
+    <div id="game-view">
+        <div id="hero" style="left: 45%; top: 80%;"></div>
+        
+        <div id="overlay">
+            <button class="nav-btn" style="font-size: 30px; padding: 20px 50px;" onclick="startGame()">PLAY</button>
+        </div>
+        
+        <div id="world"></div>
+    </div>
+
+    <nav>
+        <button class="nav-btn">HOME</button>
+        <button class="nav-btn">SHOP</button>
+        <button class="nav-btn">STATS</button>
+    </nav>
+
+<script>
+    let active = false, firing = false, ticker = 0;
+    let hX = window.innerWidth/2, hY = window.innerHeight * 0.8;
+    let items = [], lasers = [];
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSound(freq, type, dur, vol) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + dur);
+        osc.start();
+        osc.stop(audioCtx.currentTime + dur);
+    }
+
+    function startGame() {
+        document.getElementById('overlay').style.display = 'none';
+        active = true;
+        playSound(400, 'square', 0.4, 0.2); 
+        loop();
+    }
+
+    function handleMove(e) {
+        if(!active) return;
+        hX = e.clientX || (e.touches ? e.touches[0].clientX : hX);
+        hY = (e.clientY || (e.touches ? e.touches[0].clientY : hY)) - 30;
+        const hero = document.getElementById('hero');
+        hero.style.left = (hX - 30) + 'px';
+        hero.style.top = (hY - 30) + 'px';
+    }
+
+    function loop() {
+        if(!active) return;
+        ticker++;
+
+        if(ticker % 35 === 0) spawnAny();
+
+        if(firing && ticker % 10 === 0) {
+            playSound(180, 'sawtooth', 0.1, 0.3); // High Volume Laser
+            let l = document.createElement('div');
+            l.style.cssText = "position:absolute; width:6px; height:20px; background:#00fbff; box-shadow:0 0 10px #00fbff; border-radius:10px;";
+            l.style.left = hX + 'px'; l.style.top = hY + 'px';
+            document.getElementById('world').appendChild(l);
+            lasers.push({ el: l, x: hX, y: hY });
+        }
+
+        lasers.forEach((l, i) => {
+            l.y -= 15; l.el.style.top = l.y + 'px';
+            if(l.y < 0) { l.el.remove(); lasers.splice(i, 1); }
+        });
+
+        items.forEach((item, i) => {
+            item.y += 3.5;
+            item.el.style.top = item.y + 'px';
+
+            let d = Math.sqrt(Math.pow(hX - item.x, 2) + Math.pow(hY - item.y, 2));
+            if(d < 50) {
+                if(item.type === 'enemy') {
+                    playSound(100, 'sine', 0.5, 0.5);
+                    location.reload();
+                } else {
+                    // Reward Sounds - High Volume
+                    if(item.type === 'dollar') playSound(900, 'sine', 0.2, 0.5);
+                    if(item.type === 'coin') playSound(1100, 'sine', 0.2, 0.4);
+                    if(item.type === 'star') playSound(1600, 'sine', 0.3, 0.5);
+                    item.el.remove(); items.splice(i, 1);
+                }
+            }
+
+            if(item.type === 'enemy') {
+                lasers.forEach((l, li) => {
+                    if(Math.abs(l.x - item.x) < 40 && Math.abs(l.y - item.y) < 40) {
+                        playSound(200, 'square', 0.2, 0.4); // Explosion
+                        item.el.remove(); items.splice(i, 1);
+                        l.el.remove(); lasers.splice(li, 1);
+                    }
+                });
+            }
+            if(item.y > window.innerHeight) { item.el.remove(); items.splice(i, 1); }
+        });
+
+        requestAnimationFrame(loop);
+    }
+
+    function spawnAny() {
+        const t = ['dollar', 'coin', 'silver', 'star', 'enemy'];
+        let type = t[Math.floor(Math.random() * t.length)];
+        let el = document.createElement('div');
+        el.className = 'item ' + type;
+        if(type === 'dollar') el.innerText = '$';
+        if(type === 'coin') el.innerText = 'C';
+        if(type === 'star') el.innerText = '★';
+        let x = Math.random() * (window.innerWidth - 50);
+        el.style.left = x + 'px'; el.style.top = '-60px';
+        document.getElementById('world').appendChild(el);
+        items.push({ el, x, y: -60, type });
+    }
+</script>
+</body>
+</html>
